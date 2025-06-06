@@ -1,0 +1,29 @@
+body {
+  margin: 0;
+  height: 100vh;
+  background-color: #111;
+  overflow: hidden;
+  cursor: none;
+}
+
+.trail-image {
+  position: fixed;
+  width: 200px;        /* adjust size */
+  height: auto;
+  pointer-events: none; /* so it doesn’t block mouse events */
+  /* Removed border-radius, box-shadow, and transition */
+  z-index: 9999;
+  opacity: 1;
+  transition: opacity 1s ease;
+}
+
+.default-center-image {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;  /* adjust size */
+  height: auto;
+  pointer-events: none;
+  z-index: 10000;
+}
