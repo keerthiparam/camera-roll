@@ -56,55 +56,91 @@ const images = [
   "roll/VID_20241031_184704030_exported_1665.jpg"
 ];
 
-// Find the index of the default image
+// Preload images
+const cachedImages = images.map(src => {
+  const img = new Image();
+  img.src = src;
+  return img;
+});
+
+// Find default image index
 const defaultImageName = "IMG_20250517_141813290_MP~2.jpg";
 let currentIndex = images.findIndex(img => img.includes(defaultImageName));
-
-// If not found, fallback to 0
 if (currentIndex === -1) currentIndex = 0;
 
+// Create and show default centered image
 const defaultImg = document.createElement('img');
-defaultImg.src = images[currentIndex];
+defaultImg.src = cachedImages[currentIndex].src;
 defaultImg.className = 'default-center-image';
+defaultImg.style.position = 'fixed';
+defaultImg.style.left = '50%';
+defaultImg.style.top = '50%';
+defaultImg.style.transform = 'translate(-50%, -50%)';
+defaultImg.style.width = '200px';
+defaultImg.style.height = 'auto';
+defaultImg.style.pointerEvents = 'none';
+defaultImg.style.userSelect = 'none';
+defaultImg.style.zIndex = 9998;
 document.body.appendChild(defaultImg);
 
-const maxTrails = 10; // max images on screen
+// Trail configuration
+const maxTrails = 5;
 const trails = [];
+let currentTrailIndex = 0;
+
+for (let i = 0; i < maxTrails; i++) {
+  const img = document.createElement('img');
+  img.className = 'trail-image';
+  img.style.position = 'fixed';
+  img.style.width = '150px';
+  img.style.height = 'auto';
+  img.style.pointerEvents = 'none';
+  img.style.userSelect = 'none';
+  img.style.zIndex = 9999;
+  img.style.opacity = 1;
+  img.style.transition = 'opacity 1.5s ease';
+  document.body.appendChild(img);
+  trails.push({
+    element: img,
+    timeoutId: null
+  });
+}
 
 let lastX = 0;
 let lastY = 0;
-const minDistance = 50; // minimum pixels mouse must move to add new image
+const minDistance = 50;
 
 window.addEventListener('mousemove', (e) => {
-  // Calculate distance moved since last image
+  // Distance check to space images
   const dx = e.clientX - lastX;
   const dy = e.clientY - lastY;
   const dist = Math.sqrt(dx*dx + dy*dy);
-
-  if (dist < minDistance) {
-    return; // do nothing if mouse hasn’t moved far enough
-  }
+  if (dist < minDistance) return;
 
   lastX = e.clientX;
   lastY = e.clientY;
 
-  // Create new image
-  const trail = document.createElement('img');
-  trail.src = images[currentIndex];
-  trail.className = 'trail-image';
+  // Get current trail object
+  const trailObj = trails[currentTrailIndex];
+  const trail = trailObj.element;
 
+  // Clear any previous fade timeout for this trail
+  if (trailObj.timeoutId) clearTimeout(trailObj.timeoutId);
+
+  // Set image and position
+  trail.src = cachedImages[currentIndex].src;
   trail.style.left = `${e.clientX}px`;
   trail.style.top = `${e.clientY}px`;
+  trail.style.opacity = '1';
 
-  document.body.appendChild(trail);
-  trails.push(trail);
+  // Start fade-out after 2 seconds, then keep hidden
+  trailObj.timeoutId = setTimeout(() => {
+    trail.style.opacity = '0';
+  }, 2000);
 
-  if (trails.length > maxTrails) {
-    const oldTrail = trails.shift();
-    oldTrail.remove();
-  }
-
-  currentIndex = (currentIndex + 1) % images.length;
+  // Move to next trail slot and next image
+  currentTrailIndex = (currentTrailIndex + 1) % maxTrails;
+  currentIndex = (currentIndex + 1) % cachedImages.length;
 });
 
 function removeDefaultImage() {
@@ -114,4 +150,14 @@ function removeDefaultImage() {
   window.removeEventListener('mousemove', removeDefaultImage);
 }
 
-window.addEventListener('mousemove', removeDefaultImage);
+// Attach event listener once after DOM content is loaded or script runs
+window.addEventListener('mousemove', removeDefaultImage, { once: true });
+
+trail.onload = () => {
+  const minSize = 100;
+  if (trail.naturalWidth < minSize) {
+    const scale = minSize / trail.naturalWidth;
+    trail.style.width = `${trail.naturalWidth * scale}px`;
+    trail.style.height = `${trail.naturalHeight * scale}px`;
+  }
+};
